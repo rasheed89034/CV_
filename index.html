@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ATS Resume Analyzer</title>
+    <!-- Tailwind CSS for Modern Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Custom CSS for Circular Progress -->
+    <style>
+        .circular-chart { display: block; margin: 10px auto; max-width: 80%; max-height: 250px; }
+        .circle-bg { fill: none; stroke: #e2e8f0; stroke-width: 3.8; }
+        .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; transition: stroke-dasharray 1s ease-out; }
+        .percentage { fill: #1e293b; font-family: sans-serif; font-size: 0.5em; text-anchor: middle; font-weight: bold; }
+        .score-good { stroke: #10b981; } /* Green */
+        .score-avg { stroke: #f59e0b; }  /* Yellow */
+        .score-bad { stroke: #ef4444; }  /* Red */
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-10">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm py-5 mb-8">
+        <div class="max-w-4xl mx-auto px-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-indigo-600 flex items-center gap-2">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                AI ATS Analyzer
+            </h1>
+            <span class="text-sm text-slate-500 font-medium">Built by Rasheed Ahmad</span>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 space-y-6">
+
+        <!-- Upload Section (Card) -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+            <h2 class="text-lg font-semibold mb-4">Submit Your Application</h2>
+            <form id="uploadForm" class="space-y-5">
+                
+                <!-- File Upload -->
+                <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition cursor-pointer" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" accept=".pdf" class="hidden" required>
+                    <div id="fileDisplay" class="text-slate-500">
+                        <svg class="mx-auto h-12 w-12 mb-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                        <span class="font-medium">Click to upload CV (PDF)</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium mb-2 text-slate-600">Job Description (Text)</label>
+                        <textarea id="jdInput" rows="4" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Paste the job description here..." required></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2 text-slate-600">Target Skills (Comma separated)</label>
+                        <textarea id="skillsInput" rows="4" class="w-full border border-slate-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Python, FastAPI, React, SQL..." required></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-700 transition flex justify-center items-center gap-2">
+                    Analyze Resume
+                </button>
+            </form>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loader" class="hidden text-center py-10">
+            <svg class="animate-spin h-10 w-10 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <p class="mt-3 text-slate-500 font-medium animate-pulse">Running AI Analysis...</p>
+        </div>
+
+        <!-- Results Section (Hidden by default) -->
+        <div id="resultsSection" class="hidden space-y-6">
+            
+            <!-- Overall ATS Score Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 text-center">
+                <h3 class="text-sm font-bold text-slate-400 tracking-widest uppercase mb-4">Overall ATS Match</h3>
+                
+                <!-- SVG Circular Progress -->
+                <svg viewBox="0 0 36 36" class="circular-chart w-40 h-40 mx-auto">
+                    <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path id="scoreCircle" class="circle" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <text id="scoreText" x="18" y="20.35" class="percentage">0</text>
+                </svg>
+                <p id="scoreMessage" class="mt-4 font-semibold text-lg"></p>
+            </div>
+
+            <!-- Skills & Keywords Analysis -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-sm font-bold text-slate-400 tracking-widest uppercase mb-5 flex items-center gap-2">
+                    🔑 Keyword Matching
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Found Skills -->
+                    <div class="bg-emerald-50 rounded-xl p-5 border border-emerald-100">
+                        <h4 class="font-semibold text-emerald-800 mb-3">Skills Matched ✓</h4>
+                        <div id="matchedSkills" class="flex flex-wrap gap-2"></div>
+                    </div>
+                    <!-- Missing Skills -->
+                    <div class="bg-rose-50 rounded-xl p-5 border border-rose-100">
+                        <h4 class="font-semibold text-rose-800 mb-3">Skills Missing ✗</h4>
+                        <div id="missingSkills" class="flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Structural ATS Checks (Metrics & Weak Verbs) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-sm font-bold text-slate-400 tracking-widest uppercase mb-5">📋 Structural ATS Checks</h3>
+                
+                <div class="divide-y divide-slate-100">
+                    
+                    <!-- Metrics Check -->
+                    <div class="py-4 flex justify-between items-center">
+                        <span class="font-medium text-slate-700">Quantified Achievements (Numbers/%)</span>
+                        <div id="metricsResult" class="flex items-center gap-2"></div>
+                    </div>
+                    
+                    <!-- Weak Verbs Check -->
+                    <div class="py-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="font-medium text-slate-700">Weak Action Verbs Detected</span>
+                            <div id="weakVerbsStatus"></div>
+                        </div>
+                        <div id="weakVerbsList" class="space-y-2 mt-2"></div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- JavaScript to handle logic and API call -->
+    <script>
+        // Update File Input UI
+        const fileInput = document.getElementById('fileInput');
+        const fileDisplay = document.getElementById('fileDisplay');
+        
+        fileInput.addEventListener('change', function() {
+            if(this.files.length > 0) {
+                fileDisplay.innerHTML = `<span class="text-indigo-600 font-bold border border-indigo-600 bg-indigo-50 px-4 py-2 rounded-lg inline-block">📄 ${this.files[0].name}</span>`;
+            }
+        });
+
+        // Form Submit Handler
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // UI Elements
+            const submitBtn = document.getElementById('submitBtn');
+            const loader = document.getElementById('loader');
+            const resultsSection = document.getElementById('resultsSection');
+            
+            // Prepare Data
+            const formData = new FormData();
+            
+            // YAHAN CHANGE KIYA HAI: 'file' ko 'cv_file' kar diya hai
+            formData.append('cv_file', fileInput.files[0]); 
+            formData.append('jd_text', document.getElementById('jdInput').value);
+            formData.append('jd_skills', document.getElementById('skillsInput').value);
+
+            // Show Loader
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50');
+            loader.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+
+            try {
+                // Call FastAPI Backend
+                const response = await fetch('http://127.0.0.1:8000/analyze-cv/', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if(data.status === "success" || !data.detail) {
+                    updateUI(data);
+                    resultsSection.classList.remove('hidden');
+                } else {
+                    // YAHAN CHANGE KIYA HAI: JSON.stringify add kiya hai taa ke error read ho sake
+                    alert("Error: " + JSON.stringify(data.detail));
+                }
+            } catch (error) {
+                console.error("API Error:", error);
+                alert("Failed to connect to backend. Is uvicorn running?");
+            } finally {
+                // Hide Loader
+                loader.classList.add('hidden');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50');
+            }
+        });
+
+        // Function to Update UI with Backend Data
+        function updateUI(data) {
+            // 1. Update Circular Score
+            const score = Math.round(data.ats_match_percentage);
+            const scoreCircle = document.getElementById('scoreCircle');
+            const scoreText = document.getElementById('scoreText');
+            const scoreMessage = document.getElementById('scoreMessage');
+            
+            scoreText.textContent = score;
+            scoreCircle.setAttribute('stroke-dasharray', `${score}, 100`);
+            
+            scoreCircle.classList.remove('score-good', 'score-avg', 'score-bad');
+            if(score >= 75) {
+                scoreCircle.classList.add('score-good');
+                scoreMessage.textContent = "Excellent ATS Match!";
+                scoreMessage.className = "mt-4 font-bold text-lg text-emerald-600";
+            } else if(score >= 50) {
+                scoreCircle.classList.add('score-avg');
+                scoreMessage.textContent = "Moderate Match. Needs Improvement.";
+                scoreMessage.className = "mt-4 font-bold text-lg text-amber-600";
+            } else {
+                scoreCircle.classList.add('score-bad');
+                scoreMessage.textContent = "Low Match. Heavily tailor your CV.";
+                scoreMessage.className = "mt-4 font-bold text-lg text-rose-600";
+            }
+
+            // 2. Update Skills (Pill badges)
+            const matchedContainer = document.getElementById('matchedSkills');
+            const missingContainer = document.getElementById('missingSkills');
+            
+            matchedContainer.innerHTML = data.feedback.skills_matched.length > 0 
+                ? data.feedback.skills_matched.map(skill => `<span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-medium border border-emerald-200">${skill}</span>`).join('')
+                : '<span class="text-sm text-slate-500">None found</span>';
+                
+            missingContainer.innerHTML = data.feedback.skills_missing.length > 0 
+                ? data.feedback.skills_missing.map(skill => `<span class="bg-rose-100 text-rose-800 px-3 py-1 rounded-full text-sm font-medium border border-rose-200">${skill}</span>`).join('')
+                : '<span class="text-sm text-slate-500">None missing!</span>';
+
+            // 3. Update Metrics
+            const metricsResult = document.getElementById('metricsResult');
+            if(data.feedback.metrics_found) {
+                metricsResult.innerHTML = `<span class="text-emerald-600 font-bold flex items-center gap-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Found ${data.feedback.total_metrics_detected.length} metrics</span>`;
+            } else {
+                metricsResult.innerHTML = `<span class="text-rose-600 font-bold flex items-center gap-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg> None found</span>`;
+            }
+
+            // 4. Update Weak Verbs
+            const weakVerbsStatus = document.getElementById('weakVerbsStatus');
+            const weakVerbsList = document.getElementById('weakVerbsList');
+            
+            if(data.feedback.weak_bullet_points.length === 0) {
+                weakVerbsStatus.innerHTML = `<span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-md text-sm font-bold border border-emerald-200">✓ Clean</span>`;
+                weakVerbsList.innerHTML = '';
+            } else {
+                weakVerbsStatus.innerHTML = `<span class="bg-rose-100 text-rose-700 px-3 py-1 rounded-md text-sm font-bold border border-rose-200">⚠ ${data.feedback.weak_bullet_points.length} Found</span>`;
+                weakVerbsList.innerHTML = data.feedback.weak_bullet_points.map(point => 
+                    `<div class="bg-rose-50 border-l-4 border-rose-500 p-3 rounded text-sm text-slate-600 flex gap-2">
+                        <span class="text-rose-500 font-bold">•</span>
+                        ${point}
+                    </div>`
+                ).join('');
+            }
+        }
+    </script>
+</body>
+</html>
