@@ -7,3 +7,6 @@ sentence-transformers
 scikit-learn
 python-multipart
 numpy
+streamlit
+pypdf
+# add any other dependencies your parser/extractor/scorer modules use (e.g., openai, langchain, etc.)
