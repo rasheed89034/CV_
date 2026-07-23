@@ -104,7 +104,6 @@ with st.sidebar:
     st.markdown("**Rasheed Ahmad**")
     st.markdown("🤖 AI Student @ COMSATS University Islamabad")
     st.markdown("💻 Machine Learning Engineer & Backend Developer(FastAPI)")
-    st.markdown("📺 **YouTube:** Neural Intelligence by RA")
     st.markdown("---")
 
 # Main Section for CV Upload
