@@ -98,6 +98,15 @@ jd_skills = st.sidebar.text_input(
     placeholder="Python, FastAPI, Streamlit, SQL, Git",
 )
 
+with st.sidebar:
+    st.markdown("---")
+    st.markdown("### 👨‍💻 Developed By")
+    st.markdown("**Rasheed Ahmad**")
+    st.markdown("🤖 AI Student @ COMSATS University Islamabad")
+    st.markdown("💻 Machine Learning Engineer & Backend Developer(FastAPI)")
+    st.markdown("📺 **YouTube:** Neural Intelligence by RA")
+    st.markdown("---")
+
 # Main Section for CV Upload
 st.header("📤 Upload Resume")
 cv_file = st.file_uploader(
